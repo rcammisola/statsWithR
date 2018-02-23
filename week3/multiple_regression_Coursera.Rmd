@@ -143,7 +143,15 @@ variable         | description
 </ol>
 ```{r score-dist}
 # type your code for Question 3 here, and Knit
+median(evals$score)
 
+print("What was the 75th percentile score? 25% above this and if it's 4.6 then b is true?")
+quantile(evals$score)[4]
+
+print("Another way to calc this...")
+length(subset(evals, score > 4.6)) / length(evals)
+
+length(subset(evals, score < 3))
 ```
 
 <div id="exercise">
@@ -153,7 +161,14 @@ or mosaic plot).
 </div>
 ```{r two-vars-eda}
 # type your code for the Exercise here, and Knit
+ggplot(evals, aes(x = gender, y = cls_perc_eval)) + 
+  geom_boxplot()
 
+ggplot(evals, aes(x = gender, y = bty_avg)) + 
+  geom_boxplot()
+
+ggplot(data = evals, aes(x=bty_avg, y=cls_perc_eval)) +
+  geom_point()
 ```
 
 ## Simple linear regression
@@ -178,7 +193,8 @@ about the initial scatterplot?
 </div>
 ```{r jitter}
 # type your code for the Exercise here, and Knit
-
+ggplot(data = evals, aes(x=bty_avg, y=score)) +
+  geom_jitter()
 ```
 
 Let's see if the apparent trend in the plot is something more than 
@@ -187,6 +203,8 @@ score by average beauty rating and add the line to your plot using the following
 you do not remember how to do this, refer to the previous lab.
 
 ```{r scatter-score-bty_avg-line}
+m_bty <- lm(score ~ bty_avg, data = evals)
+                
 ggplot(data = evals, aes(x = bty_avg, y = score)) +
   geom_jitter() +
   geom_smooth(method = "lm")
@@ -206,9 +224,14 @@ ggplot(data = evals, aes(x = bty_avg, y = score)) +
 interpret the slope. 
 </div>
 ```{r summary-model}
-# type your code for the Exercise here, and Knit
-
+print(summary(m_bty))
 ```
+
+Equation for the model line is y = 0.06664 * bty_avg + 3.88034
+
+On average, for every increase of 1 in beauty average we would expect to see an increase of 0.06664 in score.
+
+Average beauty score appears to be a significant predictor.
 
 4. Average beauty score is a statistically significant predictor of evaluation score. 
 <ol> 
@@ -225,7 +248,13 @@ interpret the slope.
 </ol>
 ```{r diag-score-bty_avg}
 # type your code for the Question 5 here, and Knit
+cutoff <- data.frame( x = c(-Inf, Inf), y = 0, cutoff = factor(50) )
 
+ggplot(m_bty, aes(x=.fitted, y=.resid)) + 
+  geom_point() + geom_line(aes( x, y, linetype = cutoff ), cutoff)
+
+ggplot(data=m_bty, aes(.resid)) + 
+  geom_histogram(bins = 10)
 ```
 
 ## Multiple linear regression
@@ -274,7 +303,14 @@ summary(m_bty_gen)
 </div>
 ```{r diag-mlr-model}
 # type your code for the Exercise here, and Knit
+plot(m_bty_gen$residuals ~ evals$bty_avg)
+plot(m_bty_gen$residuals ~ evals$gender)
 
+hist(m_bty_gen$residuals)
+qqnorm(m_bty_gen$residuals)
+qqline(m_bty_gen$residuals)
+
+plot(m_bty_gen$residuals)
 ```
 
 <div id="exercise">
@@ -284,7 +320,7 @@ model changed the parameter estimate for `bty_avg`?
 </div>
 ```{r summary-mlr-model}
 # type your code for the Exercise here, and Knit
-
+summary(m_bty_gen)
 ```
 
 Note that the estimate for `gender` is now called `gendermale`. You'll see this 
@@ -323,7 +359,8 @@ tenure track, tenured.
 </div>
 ```{r new-mlr-model}
 # type your code for the Exercise here, and Knit
-
+m_bty_rank <- lm(score ~ bty_avg + rank, data = evals)
+summary(m_bty_rank)
 ```
 
 8. Which of the following is the correct order of the three levels of rank if we were to order them from lowest predicted course evaluation score to highest predicted course evaluation score? 
@@ -421,7 +458,10 @@ the other explanatory variables?
 </div>
 ```{r p-val-select}
 # type your code for the Exercise here, and Knit
-
+m_no_cls_profs <- lm(score ~ rank + ethnicity + gender + language + age + cls_perc_eval 
+             + cls_students + cls_level + cls_credits + bty_avg 
+             + pic_outfit + pic_color, data = evals)
+summary(m_no_cls_profs)
 ```
 
 Now we try a different model selection method: adjusted $R^2$. Create a new model, 
@@ -449,6 +489,41 @@ the highest improvement in the adjusted $R^2$.
 </div>
 ```{r adj-rsq-select}
 # type your code for the Exercise here, and Knit
+m3 = lm(score ~ rank + ethnicity  + language + age + cls_perc_eval + 
+    cls_students + cls_level + cls_profs + cls_credits + bty_avg, data = evals)
+summary(m3)$adj.r.squared
+
+m4 = lm(score ~ rank + gender + ethnicity + age + cls_perc_eval + 
+    cls_students + cls_level + cls_profs + cls_credits + bty_avg, data = evals)
+summary(m4)$adj.r.squared
+
+m5 = lm(score ~ rank + gender + ethnicity + language + cls_perc_eval + 
+    cls_students + cls_level + cls_profs + cls_credits + bty_avg, data = evals)
+summary(m5)$adj.r.squared
+
+m5 = lm(score ~ rank + gender + ethnicity + language + age + 
+    cls_students + cls_level + cls_profs + cls_credits + bty_avg, data = evals)
+summary(m5)$adj.r.squared
+
+m6 = lm(score ~ rank + gender + ethnicity + language + age + 
+    cls_perc_eval + cls_level + cls_profs + cls_credits + bty_avg, data = evals)
+summary(m6)$adj.r.squared
+
+m6 = lm(score ~ rank + gender + ethnicity + language + age + 
+    cls_perc_eval + cls_students + cls_profs + cls_credits + bty_avg, data = evals)
+summary(m6)$adj.r.squared
+
+m7 = lm(score ~ rank + gender + ethnicity + language + age + 
+    cls_perc_eval + cls_students + cls_level + cls_credits + bty_avg, data = evals)
+summary(m7)$adj.r.squared
+
+m8 = lm(score ~ rank + gender + ethnicity + language + age + 
+    cls_perc_eval + cls_students + cls_level + cls_profs + bty_avg, data = evals)
+summary(m8)$adj.r.squared
+
+m9 = lm(score ~ rank + gender + ethnicity + language + age + 
+    cls_perc_eval + cls_students + cls_level + cls_profs + cls_credits, data = evals)
+summary(m9)$adj.r.squared
 
 ```
 
